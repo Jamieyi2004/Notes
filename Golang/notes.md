@@ -1,4 +1,4 @@
-## Go基础
+# Go基础
 - Go特性
     - 高性能、高并发
     - 语法简单、学习曲线平缓
@@ -144,8 +144,88 @@
     ```
     - 向已关闭的 channel 发送数据会造成 panic。
     - 在无缓冲的通道上进行通信时，发送和接收操作是同步的，都会阻塞。带缓冲的通道可以在一定程度上解耦发送者和接收者的同步需求，允许一定的异步性。
-    - 在一个值为 nil （未初始化）的 channel 上发送和接收数据将永久阻塞
+    - 在一个值为 nil （未初始化）的 channel 上发送和接收数据将永久阻塞。利用这个死锁的特性，可以用在 select 中动态的打开和关闭 case 语句块：
+    ```go
+    func main() {
+        inCh := make(chan int)
+        outCh := make(chan int)
+
+        go func() {
+            var in <-chan int = inCh
+            var out chan<- int
+            var val int
+
+            for {
+                select {
+                case out <- val:
+                    println("--------")
+                    out = nil
+                    in = inCh
+                case val = <-in:
+                    println("++++++++++")
+                    out = outCh
+                    in = nil
+                }
+            }
+        }()
+
+        go func() {
+            for r := range outCh {
+                fmt.Println("Result: ", r)
+            }
+        }()
+
+        time.Sleep(0)
+        inCh <- 1
+        inCh <- 2
+        time.Sleep(3 * time.Second)
+    }
+
+    ```
+    - 若函数 receiver 传参是传值方式，则无法修改参数的原有值:
+    ```go
+    type data struct {
+        num   int
+        key   *string
+        items map[string]bool
+    }
+
+    // 指针接收者的方法 (pointerFunc)
+    // 这个方法的接收者是指向 data 类型的指针 (*data)。
+    // 在方法体内对 this.num 的修改会直接影响到原始的 data 实例，因为 this 指向的是原始实例的地址。
+    func (this *data) pointerFunc() {
+        this.num = 7
+    }
+
+    // 值接收者的方法 (valueFunc)
+    // 这个方法的接收者是 data 类型的值。
+    // 在方法体内对 this.num 的修改不会影响到原始的 data 实例，因为 this 是原始实例的一个副本。
+    // 然而，对于 *this.key 和 this.items 的修改却能影响到原始实例。这是因为：
+    // this.key 是一个指针，它指向原始的字符串变量，因此修改指针指向的内容会影响原始的字符串。
+    // this.items 是一个映射（map），映射本身是一个引用类型，在Go中传递映射时传递的是映射的引用，而不是整个映射的拷贝。所以，即使 this 是 data 的一个副本，this.items 指向的仍然是原始映射，因此对它的修改会影响到原始映射。
+    func (this data) valueFunc() {
+        this.num = 8
+        *this.key = "valueFunc.key"
+        this.items["valueFunc"] = true
+    }
+
+    // 在Go语言中，当你定义一个方法时，接收者可以是指针类型或值类型。当调用方法时，Go编译器会自动处理指针和值之间的转换，以确保方法能够被正确调用。
+    func main() {
+        key := "key1"
+
+        d := data{1, &key, make(map[string]bool)}
+        fmt.Printf("num=%v  key=%v  items=%v\n", d.num, *d.key, d.items)
+
+        d.pointerFunc()	// 修改 num 的值为 7
+        fmt.Printf("num=%v  key=%v  items=%v\n", d.num, *d.key, d.items)
+
+        d.valueFunc()	// 修改 key 和 items 的值
+        fmt.Printf("num=%v  key=%v  items=%v\n", d.num, *d.key, d.items)
+    }
+
+    ```
     - Go 是静态类型语言。
     - 在Go语言中，当你将参数作为指针传递给函数时，你不需要显式地解引用指针（即使用*操作符）来访问或修改指针指向的值。这是因为Go语言允许你直接使用点号.操作符来访问结构体字段或调用方法，即使你是通过指针访问这个结构体。然而，如果你需要读取指针所指向的变量的值或者是在非结构体类型的指针上进行操作，那么你还是需要用\*来解引用指针。
+    - 在Go语言中，当你定义一个方法时，接收者可以是指针类型或值类型。当调用方法时，Go编译器会自动处理指针和值之间的转换，以确保方法能够被正确调用。
     - WaitGroup变量是传值
-
+- 
