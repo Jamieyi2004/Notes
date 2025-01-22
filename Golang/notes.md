@@ -228,4 +228,43 @@
     - 在Go语言中，当你将参数作为指针传递给函数时，你不需要显式地解引用指针（即使用*操作符）来访问或修改指针指向的值。这是因为Go语言允许你直接使用点号.操作符来访问结构体字段或调用方法，即使你是通过指针访问这个结构体。然而，如果你需要读取指针所指向的变量的值或者是在非结构体类型的指针上进行操作，那么你还是需要用\*来解引用指针。
     - 在Go语言中，当你定义一个方法时，接收者可以是指针类型或值类型。当调用方法时，Go编译器会自动处理指针和值之间的转换，以确保方法能够被正确调用。
     - WaitGroup变量是传值
-- 
+- 接口（Interface）与实现
+接口是一种抽象类型，它定义了一组方法签名。如果一个类型实现了接口的所有方法，那么这个类型就实现了该接口。Go的接口是隐式实现的，不需要显式声明。
+```go
+type Speaker interface {
+    Speak() string
+}
+
+type Dog struct {
+    Name string
+}
+
+func (d Dog) Speak() string {
+    return "Woof!"
+}
+
+type Cat struct {
+    Name string
+}
+
+func (c Cat) Speak() string {
+    return "Meow!"
+}
+
+func main() {
+    // 这里，s 是一个 Speaker 类型的接口变量，它只知道 Speak() 方法的存在。如果你想访问 Dog 或 Cat 的字段（例如 Name），你需要进行类型断言（type assertion）来将接口变量转换回具体类型。
+    var s Speaker
+    s = Dog{Name: "Buddy"}
+    fmt.Println(s.Speak()) // 输出 "Woof!"
+
+    s = Cat{Name: "Whiskers"}
+    fmt.Println(s.Speak()) // 输出 "Meow!"
+
+    // 安全形式的类型断言，以避免潜在的运行时错误。
+    if dog, ok := s.(Dog); ok {
+        fmt.Println(dog.Name)
+    }
+    // 直接断言类型，如果失败会导致运行时panic。
+    // dog := s.(Dog) // 如果 s 不是 Dog 类型，则会 panic
+}
+```
