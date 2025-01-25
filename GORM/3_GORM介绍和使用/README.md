@@ -5,6 +5,8 @@
 - https://www.liwenzhou.com/posts/Go/gorm/
 - https://www.liwenzhou.com/posts/Go/gorm_crud/
 
+学会找资料&自学！
+用Github搜索
 ## 什么是ORM
 
 Object Relational Mapping：对象（程序中的对象/实例）关系（关系型数据库）映射
@@ -61,7 +63,7 @@ import _ "github.com/jinzhu/gorm/dialects/mysql"
 ```go
 import (
   "github.com/jinzhu/gorm"
-  _ "github.com/jinzhu/gorm/dialects/mysql"
+  _ "github.com/jinzhu/gorm/dialects/mysql" // 要加前缀 只用到了初始化方法
 )
 
 func main() {
@@ -125,7 +127,14 @@ func main() {
 1. 本文以MySQL数据库为例，讲解GORM各项功能的主要使用方法。
 2. 往下阅读本文前，你需要有一个能够成功连接上的MySQL数据库实例。
 
-### Docker快速创建MySQL实例
+### 启动MySQL (我的方法)
+```bash
+sudo systemctl start mysql
+mysql --version
+mysql -u root -p
+```
+
+### Docker快速创建MySQL实例（网上的方法）
 
 很多同学如果不会安装MySQL或者懒得安装MySQL，可以使用一下命令快速运行一个MySQL8.0.19实例，当然前提是你要有docker环境…
 
@@ -147,6 +156,7 @@ docker run -it --network host --rm mysql mysql -h127.0.0.1 -P13306 --default-cha
 
 ```mysql
 CREATE DATABASE db1;
+SHOW DATABASES;
 ```
 
 ### GORM操作MySQL
@@ -188,7 +198,7 @@ func main() {
 	db.Create(&u2)
 	// 查询
 	var u = new(UserInfo)
-	db.First(u)
+	db.First(u) // 查询表中第一行数据到u中
 	fmt.Printf("%#v\n", u)
 
 	var uu UserInfo
