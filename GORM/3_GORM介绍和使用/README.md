@@ -253,6 +253,10 @@ type User struct {
 ### 模型定义示例
 
 ```go
+// 当一个字段被声明为指针类型（例如 *time.Time 或 *string），这意味着：
+
+//可以为 nil：指针允许字段不指向任何实例，即它可以是 nil。这对于表示缺少值的情况很有用，比如用户的生日可能未知，或者会员号可能尚未分配。
+//需要通过指针访问和修改值：你需要解引用指针来获取或设置实际值，如 (*myTime).Year() 或者更简洁地使用 myTime.Year() 当使用自动解引用时。
 type User struct {
   gorm.Model
   Name         string
@@ -336,6 +340,10 @@ type User struct {} // 默认表名是 `users`
 
 // 将 User 的表名设置为 `profiles`
 func (User) TableName() string {
+  // 为什么可以这样写？
+  // 类型作为接收者：虽然看起来像是直接使用了类型名 User，但实际上这是 Go 中的一种语法糖，表示该方法不需要访问或修改实例的具体状态。也就是说，这个方法不依赖于任何特定的 User 实例的数据成员。
+
+  // 在 Go 语言中，方法接收者是定义方法属于哪个类型的关键部分。方法接收者可以是值类型（接收者为类型的值）或指针类型（接收者为类型的指针）。
   return "profiles"
 }
 
@@ -422,3 +430,6 @@ db.Model(&user).Update("name", "jinzhu") // `UpdatedAt`将会是当前时间
 #### DeletedAt
 
 如果模型有`DeletedAt`字段，调用`Delete`删除该记录时，将会设置`DeletedAt`字段为当前时间，而不是直接将记录从数据库中删除。
+
+## GORM的安全性
+不会进行删除操作。

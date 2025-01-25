@@ -36,7 +36,7 @@ func main() {
 
 ```go
 type User struct {
-	ID           int64
+	ID           int64 // 默认是主键
 	Name         string
 	Age          int64
 }
@@ -46,9 +46,9 @@ type User struct {
 
 ```go
 user := User{Name: "q1mi", Age: 18}
-
+// NewRecord 方法用于检查给定的结构体实例是否为“新记录”，即其主键字段是否为空（通常是未设置 ID）。
 db.NewRecord(user) // 主键为空返回`true`
-db.Create(&user)   // 创建user
+db.Create(&user)   // 创建user 带&  可以修改原对象 避免消耗内存 
 db.NewRecord(user) // 创建`user`后返回`false`
 ```
 
@@ -64,7 +64,7 @@ type User struct {
 }
 ```
 
-**注意：**通过tag定义字段的默认值，在创建记录时候生成的 SQL 语句会排除没有值或值为 零值 的字段。 在将记录插入到数据库后，Gorm会从数据库加载那些字段的默认值。
+**注意：** 通过tag定义字段的默认值，在创建记录时候生成的 SQL 语句会排除没有值或值为 零值的字段。 在将记录插入到数据库后，Gorm会从数据库加载那些字段的默认值。
 
 举个例子：
 
@@ -86,7 +86,7 @@ type User struct {
   Name *string `gorm:"default:'小王子'"`
   Age  int64
 }
-user := User{Name: new(string), Age: 18))}
+user := User{Name: new(string), Age: 18))} // new 返回一个指针
 db.Create(&user)  // 此时数据库中该条记录name字段的值就是''
 ```
 
@@ -118,6 +118,8 @@ db.Set("gorm:insert_option", "ON CONFLICT").Create(&product)
 ### 一般查询
 
 ```go
+var user = new(UserInfo)
+
 // 根据主键查询第一条记录
 db.First(&user)
 //// SELECT * FROM users ORDER BY id LIMIT 1;
@@ -263,7 +265,17 @@ db.Where("name = 'jinzhu'").Or(map[string]interface{}{"name": "jinzhu 2"}).Find(
 
 ### 内联条件
 
-作用与`Where`查询类似，当内联条件与多个[立即执行方法](https://www.liwenzhou.com/posts/Go/gorm_crud/#autoid-1-3-1)一起使用时, 内联条件不会传递给后面的立即执行方法。
+作用与`Where`查询类似，当内联条件与多个[立即执行方法](https://www.liwenzhou.com/posts/Go/gorm_crud/#autoid-1-3-1)一起使用时, 内联条件不会传递给后面的立即执行方法，内联条件的作用范围仅限于它被指定的那个查询方法调用。
+```go
+// 第一个查询使用内联条件
+var user User
+db.First(&user, "name = ?", "jinzhu") // 仅查找 name 为 "jinzhu" 的第一条记录
+
+// 第二个查询没有内联条件
+var users []User
+db.Find(&users) // 查找所有用户的记录，不受前一个查询的影响
+```
+内联条件 是直接在查询方法中提供的条件，适用于简单、一次性的查询需求；Where 方法 则更适合用于构建复杂的查询条件链，允许你逐步添加多个条件。
 
 ```go
 // 根据主键获取记录 (只适用于整形主键)
