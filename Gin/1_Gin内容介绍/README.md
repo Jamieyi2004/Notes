@@ -694,6 +694,10 @@ func main() {
 
 ```go
 // Binding from JSON
+
+// form:"user"：当从表单数据（例如HTTP POST请求中的表单）解析值到这个结构体时，会查找名称为 "user" 的表单字段。
+// json:"user"：当将这个结构体序列化为JSON格式时，User 字段将会被表示为键名为 "user" 的JSON对象属性；同样地，当从JSON反序列化到这个结构体时，也会寻找键名为 "user" 的JSON对象属性来填充 User 字段。
+// binding:"required"：这通常用于输入验证，意味着该字段是必须填写的。如果在绑定（binding）过程中发现 User 或 Password 字段为空，则会触发验证错误。
 type Login struct {
 	User     string `form:"user" json:"user" binding:"required"`
 	Password string `form:"password" json:"password" binding:"required"`
@@ -756,7 +760,7 @@ func main() {
 2. 如果是 `POST` 请求，首先检查 `content-type` 是否为 `JSON` 或 `XML`，然后再使用 `Form`（`form-data`）。
 
 ## 文件上传
-
+从客户端上传文件到服务端
 ### 单个文件上传
 
 文件上传前端页面代码：
@@ -784,6 +788,9 @@ func main() {
 	// 处理multipart forms提交文件时默认的内存限制是32 MiB
 	// 可以通过下面的方式修改
 	// router.MaxMultipartMemory = 8 << 20  // 8 MiB
+	r.GET("/index",func(c *gin.Context){
+		c.HTML(http.StatusOK,"index,html", nil)
+	})
 	router.POST("/upload", func(c *gin.Context) {
 		// 单个文件
 		file, err := c.FormFile("f1")
@@ -796,6 +803,7 @@ func main() {
 
 		log.Println(file.Filename)
 		dst := fmt.Sprintf("C:/tmp/%s", file.Filename)
+		// dst := path.Join("./",f.Filename)
 		// 上传文件到指定的目录
 		c.SaveUploadedFile(file, dst)
 		c.JSON(http.StatusOK, gin.H{
@@ -836,8 +844,12 @@ func main() {
 ## 重定向
 
 ### HTTP重定向
-
 HTTP 重定向很容易。 内部、外部重定向均支持。
+- 通过发送一个HTTP响应给客户端，指示客户端去访问新的URL。
+- 客户端会收到一个新的HTTP请求，这通常会导致浏览器地址栏中的URL发生变化。
+- 支持外部链接的重定向（例如，到另一个域名）。
+- 可以设置不同的HTTP状态码来表达不同类型的重定向，如临时重定向（302 Found）、永久重定向（301 Moved Permanently）等。
+
 
 ```go
 r.GET("/test", func(c *gin.Context) {
@@ -846,7 +858,11 @@ r.GET("/test", func(c *gin.Context) {
 ```
 
 ### 路由重定向
-
+- 内部重定向到另一个路由处理函数，而不通知客户端。客户端不会察觉到发生了重定向。
+- 这是在服务器端进行的逻辑跳转，客户端不会看到URL的变化。
+- 仅限于应用内的路由，不能用于外部链接。
+- 使用 HandleContext 方法重新处理修改后的上下文（context），这样可以触发与新路径相匹配的路由处理器。
+- 这种方式可以在不改变用户所见URL的情况下，执行不同的业务逻辑或访问不同的资源。
 路由重定向，使用`HandleContext`：
 
 ```go
@@ -873,7 +889,16 @@ r.POST("/login", func(c *gin.Context) {...})
 此外，还有一个可以匹配所有请求方法的`Any`方法如下：
 
 ```go
-r.Any("/test", func(c *gin.Context) {...})
+r.Any("/test", func(c *gin.Context) {
+	swithch c.Request.Method{
+	case "GET":
+		c.JSON(http.StatusOK,gin.H{"method":"GET"})
+	case http.MethodPost:
+		c.JSON(http.StatusOK,gin.H{"method":"POST"})
+	}
+	
+
+})
 ```
 
 为没有配置处理函数的路由添加处理程序，默认情况下它返回404代码，下面的代码为没有匹配到路由的请求都返回`views/404.html`页面。
@@ -886,7 +911,7 @@ r.NoRoute(func(c *gin.Context) {
 
 ### 路由组
 
-我们可以将拥有共同URL前缀的路由划分为一个路由组。习惯性一对`{}`包裹同组的路由，这只是为了看着清晰，你用不用`{}`包裹功能上没什么区别。
+我们可以将拥有共同URL前缀的路由划分为一个路由组。习惯性一对`{}`包裹同组的路由，这只是为了看着清晰，用不用`{}`包裹功能上没什么区别。
 
 ```go
 func main() {
@@ -941,6 +966,7 @@ Gin中的中间件必须是一个`gin.HandlerFunc`类型。例如我们像下面
 ```go
 // StatCost 是一个统计耗时请求耗时的中间件
 func StatCost() gin.HandlerFunc {
+	// 这里可以加一些准备工作的逻辑
 	return func(c *gin.Context) {
 		start := time.Now()
 		c.Set("name", "小王子") // 可以通过c.Set在请求上下文中设置值，后续的处理函数能够取到该值
@@ -986,6 +1012,9 @@ func main() {
 	r.Run()
 }
 ```
+#### c.Abort()
+不执行后续的处理程序
+若来拿c.Abort()后的程序也不想执行，则return
 
 #### 为某个路由单独注册
 
@@ -1025,7 +1054,13 @@ shopGroup.Use(StatCost())
 }
 ```
 
+#### 跨中间件存取值
+c.Set(string,interface{})
+val, ok := c.Get("key")
+
 ### 中间件注意事项
+
+
 
 #### gin默认中间件
 

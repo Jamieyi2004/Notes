@@ -7,7 +7,7 @@
 
 ## 什么是ORM
 
-Object Relational Mapping：对象关系映射
+Object Relational Mapping：对象（程序中的对象/实例）关系（关系型数据库）映射
 
 ![image-20200917213143434](images/image-20200917213143434.png)
 
