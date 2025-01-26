@@ -377,10 +377,18 @@ func main() {
 ```
 
 Gin框架中使用`LoadHTMLGlob()`或者`LoadHTMLFiles()`方法进行HTML模板渲染。
+c.HTML() 是 Gin 框架中用于渲染HTML模板并返回给客户端的方法。此方法通常接受两个或三个参数，具体如下：
+HTTP状态码（int）：这是第一个参数，表示要返回的HTTP响应状态码。常见的有：
+http.StatusOK (200) 表示请求成功。
+http.StatusNotFound (404) 表示资源未找到。
+等等。
+模板名称（string）：第二个参数是要渲染的HTML模板的名字。这个名称应该对应于通过r.LoadHTMLGlob()或r.LoadHTMLFiles()加载的模板之一。注意，这里的名称不包括文件扩展名，并且如果使用了模板分组或者子目录，可能需要包含路径信息。
+数据（gin.H 或其他类型）：第三个参数是可选的，用来传递给模板的数据。这通常是gin.H类型的map，但也可以是任何可以序列化为模板变量的Go数据结构（如struct、slice等）。通过这种方式，可以在HTML模板中使用这些数据进行动态内容生成。
 
 ```go
 func main() {
 	r := gin.Default()
+	// 告诉Gin框架 html在哪
 	r.LoadHTMLGlob("templates/**/*")
 	//r.LoadHTMLFiles("templates/posts/index.html", "templates/users/index.html")
 	r.GET("/posts/index", func(c *gin.Context) {
